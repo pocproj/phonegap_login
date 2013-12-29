@@ -6,6 +6,7 @@ $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
             console.log('Ajax success from Hana');
         }
         if (options.url.search("xsjs")>-1 && !!data.search && data.search("initLoginForm") > -1) {
+            alert('Going to redirect');
             location.href = app.config.loginPage;
         }
         else {
