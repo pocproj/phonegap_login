@@ -1,0 +1,34 @@
+body {
+	background: #FFFFFF;
+	color: #F0AB00;
+	font: 12px Arial,Helvetica,sans-serif;
+}
+
+#loginContainer {
+	color: #333;
+	/*background: white no-repeat left top;*/
+	background-size: 100% 100%;
+	width: 250px;
+	padding: 0 15px 0 15px;
+	font-size: 16px;
+	font-weight: bold;
+}
+
+#loginFormArea {
+	/*padding: 20px;*/
+}
+
+#sapLogo {
+	display: none;
+}
+
+.formTitle {
+	font-size: x-large;
+	//text-align: center;
+	//padding-left: 10%;
+	margin: 0 0 10px 0;
+}
+
+.right {
+	float: right;
+}
