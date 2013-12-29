@@ -1,7 +1,11 @@
 $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
     //test for Hana login page
     options.success = function (data) {
-        if (options.url.search("xsjs") && !!data.search && data.search("initLoginForm") > -1) {
+        if(options.url.search("xsjs")>-1){
+            alert('Ajax success from Hana');
+            console.log('Ajax success from Hana');
+        }
+        if (options.url.search("xsjs")>-1 && !!data.search && data.search("initLoginForm") > -1) {
             setTimeout(function () {
                 location.href = app.config.loginPage;
             }, 200);
@@ -15,7 +19,8 @@ $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
     options.error=function(xhr, status, error){
         try{
             var xhrStatus = xhr.status;
-            console.log(xhrStatus.toString());
+            alert('Ajax Error: '+status.toString()+error.toString());
+            console.log('Ajax Error: '+status.toString()+error.toString());
             if(inArray(xhrStatus, [401])){
                 location.href = app.config.loginPage;
             }
