@@ -1,26 +1,317 @@
-<!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8" />
-    <meta name="format-detection" content="telephone=no" />
-    <!-- WARNING: for iOS 7, remove the width=device-width and height=device-height attributes. See https://issues.apache.org/jira/browse/CB-4323 -->
-    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
-    <link rel="stylesheet" type="text/css" href="css/index.css" />
-    <title>Login Page</title>
+    <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+    <meta http-equiv='X-UA-Compatible' content='IE=edge' />
+	<meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=no;" />
+	<title>HANA Login</title>
+	<!--<script id="sap-ui-bootstrap" type="text/javascript"-->
+		<!--src="/sap/ui5/1/resources/sap-ui-core.js"-->
+		<!--data-sap-ui-language="en"-->
+		<!--data-sap-ui-theme="sap_goldreflection"-->
+		<!--data-sap-ui-libs="sap.ui.core,sap.ui.commons,sap.ui.ux3,sap.ui.table">-->
+	<!--</script>-->
+    <script src="https://sapui5.netweaver.ondemand.com/resources/sap-ui-core.js"
+            id="sap-ui-bootstrap"
+            data-sap-ui-libs="sap.m,sap.ui.commons,sap.ui.ux3,sap.ui.table"
+            data-sap-ui-theme="sap_bluecrystal">
+    </script>
+	<!--<script type="text/javascript" src="/sap/ui5/1/resources/jquery-sap.js"></script>-->
+    <script type="text/javascript" src="util/funcjs.js"></script>
+    <script type="text/javascript" src="util/appConfig.js"></script>
+    <script type="text/javascript" src="loginprefilter.js"></script>
+	<script type="text/javascript" src="login.js"></script>
 </head>
+<script>
+
+function loadCSS(filename) {
+	$.ajax({
+	    url: filename,
+	    dataType: 'text',
+	    success: function(data) {
+	        $('<style type="text/css">\n' + data + '</style>').appendTo("head");                    
+	    }                  
+	});
+	// $("<link/>", {
+	//    rel: "stylesheet",
+	//    type: "text/css",
+	//    href: filename
+	// }).appendTo("head");
+}
+
+/********************************************************************
+ *								SAPUI5								*
+ *******************************************************************/
+  
+function createMessage(msg, level) {
+	var now = (new Date()).toUTCString();
+	var oMessage = new sap.ui.core.Message({
+		text: msg,
+		timestamp: now,
+		level: level
+	});
+	return oMessage;
+}
+
+function addNotification(msg, type) {
+	var messageNotifier = sap.ui.getCore().getControl("messageNotifier");
+	var oMessage = createMessage(msg, type);
+	messageNotifier.addMessage(oMessage);
+}
+ 
+function initNotificationBar() {
+	function displayListener(oEvent) {
+		var bShow = oEvent.getParameter("show");
+		if (bShow) {
+			var sStatus = sap.ui.ux3.NotificationBarStatus.Default;
+			notificationBar.setVisibleStatus(sStatus);
+		} else {
+			var sStatus = sap.ui.ux3.NotificationBarStatus.None;
+			notificationBar.setVisibleStatus(sStatus);
+		}
+	};
+
+	function clickListener(oEvent) {
+		$('#notificationBar-ArrowUp').trigger('click');
+	};
+
+	var messageNotifier = new sap.ui.ux3.Notifier('messageNotifier', { title : "Notifications" });
+	messageNotifier.attachMessageSelected(clickListener);
+
+	var notificationBar = new sap.ui.ux3.NotificationBar('notificationBar', {
+		display : displayListener,
+		visibleStatus : "None"
+	});
+	notificationBar.addStyleClass("sapUiNotificationBarDemokit");
+	notificationBar.setMessageNotifier(messageNotifier);
+	notificationBar.placeAt("notificationBarArea");
+} 
+
+function initLogout(username) {
+    var loginFormLayout = sap.ui.getCore().getControl("loginForm");
+    if (loginFormLayout) {
+        loginFormLayout.setVisible(false);
+    }
+    
+    var changePwdLayout = sap.ui.getCore().getControl("changePwdFormLayout");
+    if (changePwdLayout) {
+    	changePwdLayout.setVisible(false);
+    }
+
+    var logoutLayout = sap.ui.getCore().getControl("logoutLayout");
+    if (!logoutLayout) {
+        logoutLayout = new sap.ui.commons.layout.MatrixLayout( {
+            id : "logoutLayout",
+            layoutFixed : true,
+            columns : 2,
+            width : "100%",
+            widths : [ "60%", "40%" ]
+        });
+
+        // The form title
+        var oCell = new sap.ui.commons.layout.MatrixLayoutCell({ colSpan: 2 });
+        var oFormTitle = new sap.ui.commons.TextView({ text : 'Welcome', design : sap.ui.commons.TextViewDesign.H2 }).addStyleClass('formTitle');
+        oCell.addContent(oFormTitle);
+        logoutLayout.createRow(oCell);
+
+        var usernameLabel = new sap.ui.commons.Label("usernameLabel", { text: "You are logged in as " + username + "!", width: '100%', textAlign: sap.ui.core.TextAlign.Left, design: sap.ui.commons.LabelDesign.Bold }); 
+        var logoutButton = new sap.ui.commons.Button({ text : "Logout", press : sendLogout }).addStyleClass("right");
+        logoutLayout.createRow( usernameLabel, logoutButton );	
+
+        logoutLayout.placeAt("loginFormArea");
+    }
+    sap.ui.getCore().getControl("usernameLabel").setText("You are logged in as " + username);
+    logoutLayout.setVisible(true);
+}
+
+function initLoginForm() {
+    var logoutLayout = sap.ui.getCore().getControl("logoutLayout");
+    if (logoutLayout) {
+        logoutLayout.setVisible(false);
+    }
+    
+    var changePwdLayout = sap.ui.getCore().getControl("changePwdFormLayout");
+    if (changePwdLayout) {
+    	changePwdLayout.setVisible(false);
+    }
+
+    var loginFormLayout = sap.ui.getCore().getControl("loginForm");
+    if (!loginFormLayout) {
+        loginFormLayout = new sap.ui.commons.layout.MatrixLayout('loginForm', {
+            id : "loginFormLayout",
+            layoutFixed : true,
+            columns : 2,
+            width : "100%",
+            widths : [ "60%", "40%" ]
+        });
+
+        // The form title
+        var oCell = new sap.ui.commons.layout.MatrixLayoutCell({ colSpan: 2 });
+        var oFormTitle = new sap.ui.commons.TextView({ text : 'HANA Login', design : sap.ui.commons.TextViewDesign.H2 }).addStyleClass('formTitle');
+        oCell.addContent(oFormTitle);
+        loginFormLayout.createRow(oCell);
+
+        // The username field
+        var usernameLabel = new sap.ui.commons.Label({ text: "User Name", width: '100%', textAlign: sap.ui.core.TextAlign.Left, design: sap.ui.commons.LabelDesign.Bold }); 
+        var usernameField = new sap.ui.commons.TextField({ id: 'username', width : '90%' }).addStyleClass("right");
+        usernameField.attachBrowserEvent("keypress", function(e){ if(e.keyCode == 13) sendForm(); });
+        usernameField.onAfterRendering = function() {
+            this.focus();
+        };
+        loginFormLayout.createRow( usernameLabel, usernameField );	
+
+        // The password field
+        var passwordLabel = new sap.ui.commons.Label({ text: "Password", width: '100%', textAlign: sap.ui.core.TextAlign.Left, design: sap.ui.commons.LabelDesign.Bold }); 
+        var passwordField = new sap.ui.commons.PasswordField({ id: 'password', width : '90%' }).addStyleClass("right");
+        passwordField.attachBrowserEvent("keypress", function(e){ if(e.keyCode == 13) sendForm(); });
+        loginFormLayout.createRow( passwordLabel, passwordField );	
+
+        // The login button
+        var loginButton = new sap.ui.commons.Button({ text : "Login", press : sendForm }).addStyleClass("right");
+        var oCell = new sap.ui.commons.layout.MatrixLayoutCell({
+            colSpan: 2,
+            content: loginButton
+        });
+        var oRow = new sap.ui.commons.layout.MatrixLayoutRow({
+            cells: [oCell]
+        });
+        loginFormLayout.addRow( oRow );	
+
+        loginFormLayout.placeAt("loginFormArea");
+    }
+    loginFormLayout.setVisible(true);
+    sap.ui.getCore().getControl("username").setValue("");
+    sap.ui.getCore().getControl("password").setValue("");
+}
+ 
+function initChangePwdForm() {
+    var logoutLayout = sap.ui.getCore().getControl("logoutLayout");
+    if (logoutLayout) {
+        logoutLayout.setVisible(false);
+    }
+    
+    var loginFormLayout = sap.ui.getCore().getControl("loginForm");
+    if (loginFormLayout) {
+    	loginFormLayout.setVisible(false);
+    }
+
+    var changePwdFormLayout = sap.ui.getCore().getControl("changePwdFormLayout");
+    if (!changePwdFormLayout) {
+        changePwdFormLayout = new sap.ui.commons.layout.MatrixLayout({
+            id : "changePwdFormLayout",
+            layoutFixed : true,
+            columns : 2,
+            width : "100%",
+            widths : [ "60%", "40%" ]
+        });
+
+        // The form title
+        var oCell = new sap.ui.commons.layout.MatrixLayoutCell({ colSpan: 2 });
+        var oFormTitle = new sap.ui.commons.TextView({ text : 'Change password', design : sap.ui.commons.TextViewDesign.H2 }).addStyleClass('formTitle');
+        oCell.addContent(oFormTitle);
+        changePwdFormLayout.createRow(oCell);
+
+        // The previous password field
+        var prevPwdLabel = new sap.ui.commons.Label({ text: "Previous password", width: '100%', textAlign: sap.ui.core.TextAlign.Right, design: sap.ui.commons.LabelDesign.Bold }); 
+        var prevPwdField = new sap.ui.commons.PasswordField({ id: 'prevPwd', width : '90%' }).addStyleClass("right");
+        prevPwdField.attachBrowserEvent("keypress", function(e){ if(e.keyCode == 13) sendChangePwdForm(); });
+        changePwdFormLayout.createRow( prevPwdLabel, prevPwdField );	
+
+        // The new password 1 field
+        var newPwd1Label = new sap.ui.commons.Label({ text: "New password", width: '100%', textAlign: sap.ui.core.TextAlign.Right, design: sap.ui.commons.LabelDesign.Bold }); 
+        var newPwd1Field = new sap.ui.commons.PasswordField({ id: 'newPwd1', width : '90%' }).addStyleClass("right");
+        newPwd1Field.attachBrowserEvent("keypress", function(e){ if(e.keyCode == 13) sendChangePwdForm(); });
+        changePwdFormLayout.createRow( newPwd1Label, newPwd1Field );	
+
+        // The new password 2 field
+        var newPwd2Label = new sap.ui.commons.Label({ text: "Confirm password", width: '100%', textAlign: sap.ui.core.TextAlign.Right, design: sap.ui.commons.LabelDesign.Bold }); 
+        var newPwd2Field = new sap.ui.commons.PasswordField({ id: 'newPwd2', width : '90%' }).addStyleClass("right");
+        newPwd2Field.attachBrowserEvent("keypress", function(e){ if(e.keyCode == 13) sendChangePwdForm(); });
+        changePwdFormLayout.createRow( newPwd2Label, newPwd2Field );	
+
+        // The login button
+        var changePwdButton = new sap.ui.commons.Button("changePwdButton", { text : "Change Password", press : sendChangePwdForm }).addStyleClass("right");
+        var logoutButton = new sap.ui.commons.Button({ text : "Logout", press : sendLogout }).addStyleClass("right");
+        var horizontalLayout = new sap.ui.commons.layout.HorizontalLayout({content: [changePwdButton, logoutButton]}).addStyleClass("right");
+        var oCell = new sap.ui.commons.layout.MatrixLayoutCell({
+            colSpan: 2,
+            content: horizontalLayout
+        });
+        var oRow = new sap.ui.commons.layout.MatrixLayoutRow({
+            cells: [oCell]
+        });
+        changePwdFormLayout.addRow( oRow ); 
+
+        changePwdFormLayout.placeAt("loginFormArea");
+    }
+    changePwdFormLayout.setVisible(true);
+}
+
+function init() {
+    checkSession();
+	initNotificationBar();
+}
+
+var isMobile = {
+	Android: function() {
+		return navigator.userAgent.match(/Android/i);
+	},
+	BlackBerry: function() {
+		return navigator.userAgent.match(/BlackBerry/i);
+	},
+	iOS: function() {
+		return navigator.userAgent.match(/iPhone|iPad|iPod/i);
+	},
+	Opera: function() {
+		return navigator.userAgent.match(/Opera Mini/i);
+	}, 
+	Windows: function() {
+		return navigator.userAgent.match(/IEMobile/i);
+	},
+	any: function() {
+		return (isMobile.Android() || isMobile.BlackBerry() || isMobile.iOS() || isMobile.Opera() || isMobile.Windows());
+	}
+};
+
+var layout = getParameterByName('layout');
+if (isMobile.any()) {
+	layout = 'mobile';
+}
+
+switch (layout) {
+	case 'light':
+		loadCSS('style/light.css');
+		break;
+	case 'mobile':
+		loadCSS('style/mobile.css');
+		break;
+	default:
+		loadCSS('style/default.css');
+}
+
+$(document).ready(function() {
+	init();
+});
+
+$.ajaxSetup({
+    //data: {"x-sap-origin-location": getParameterByName("x-sap-origin-location")},
+    error: function(err) {
+        if (err) {
+            try {
+                addNotification(JSON.parse(err.responseText).exception, sap.ui.core.MessageType.Error);
+            }
+            catch(exp) {
+
+            }
+        }
+    }
+});
+
+</script>
 <body>
-<!--<div class="app">-->
-<!--<h1>Apache Cordova</h1>-->
-<!--<div id="deviceready" class="blink">-->
-<!--<p class="event listening">Connecting to Device</p>-->
-<!--<p class="event received">Device is Ready</p>-->
-<!--</div>-->
-<!--</div>-->
-<h2>Login Page</h2>
-<script type="text/javascript" src="phonegap.js"></script>
-<!--<script type="text/javascript" src="js/index.js"></script>-->
-<!--<script type="text/javascript">-->
-<!--app.initialize();-->
-<!--</script>-->
+	<div id="loginContainer">
+		<div id="loginHeader" ></div>
+		<div id="loginFormArea"  class="whiteBG" ></div>
+	</div>
+	<div id="notificationBarArea" ></div>
 </body>
 </html>
