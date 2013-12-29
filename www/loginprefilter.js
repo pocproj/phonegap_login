@@ -5,6 +5,7 @@ $.ajaxPrefilter(function(options,originalOptions, jqXHR) {
         if(!!username){
             // replace all '@' and '.' with '_'
             options.data = options.data.replace(encodeURIComponent(username),encodeURIComponent(username.replace(/[@,\.]/g,"_")));
+            alert(options.data);
         }
         // go to app main page on login success
         if(!!origO.success){
